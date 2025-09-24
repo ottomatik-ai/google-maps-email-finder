@@ -1,0 +1,562 @@
+{
+  "name": "ClayGen Alternative - Website Social Media Contact Extractor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "claygen-alternative",
+        "responseMode": "responseNode",
+        "options": {
+          "ignoreBots": true,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "7b27ee9b-682e-42a5-a516-7a213bd42b79",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "gl": "us",
+          "device": "desktop",
+          "google_domain": "google.com",
+          "hl": "en"
+        }
+      },
+      "id": "google-search",
+      "name": "Google Search (SerpApi)",
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        464,
+        312
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {},
+          "timeout": 30000
+        }
+      },
+      "id": "website-crawler",
+      "name": "Website Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "company_name",
+              "cssSelector": "h1, .company-name, .business-name, title, .brand-name, .site-title"
+            },
+            {
+              "key": "social_links",
+              "cssSelector": "a[href*=\"facebook.com\"], a[href*=\"linkedin.com\"], a[href*=\"twitter.com\"], a[href*=\"instagram.com\"], a[href*=\"youtube.com\"], a[href*=\"tiktok.com\"]",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            },
+            {
+              "key": "contact_info",
+              "cssSelector": ".contact, .contact-info, .business-details, [class*=\"contact\"], .contact-section, .business-contact"
+            },
+            {
+              "key": "email_addresses",
+              "cssSelector": "a[href^=\"mailto:\"], [href*=\"@\"], .email, .contact-email, [class*=\"email\"]",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            },
+            {
+              "key": "phone_numbers",
+              "cssSelector": "a[href^=\"tel:\"], [class*=\"phone\"], [class*=\"tel\"], .phone, .contact-phone, [class*=\"contact-phone\"]",
+              "returnArray": true
+            },
+            {
+              "key": "business_address",
+              "cssSelector": ".address, .location, [class*=\"address\"], .business-address, .contact-address"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "html-extractor",
+      "name": "HTML Data Extractor",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        896,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "social_links",
+        "options": {}
+      },
+      "id": "split-social-links",
+      "name": "Split Social Links",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.social_links }}",
+        "options": {
+          "response": {},
+          "timeout": 30000
+        }
+      },
+      "id": "social-media-crawler",
+      "name": "Social Media Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "contact_email",
+              "cssSelector": "a[href^=\"mailto:\"], [href*=\"@\"], .email, .contact-email, [class*=\"email\"], [data-testid*=\"email\"], [data-testid*=\"contact\"]",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            },
+            {
+              "key": "contact_phone",
+              "cssSelector": "a[href^=\"tel:\"], [class*=\"phone\"], [class*=\"contact\"], .phone, .contact-phone, [class*=\"contact-phone\"], [data-testid*=\"phone\"], [data-testid*=\"contact\"]",
+              "returnArray": true
+            },
+            {
+              "key": "contact_name",
+              "cssSelector": ".contact-name, .owner-name, .principal-contact, h1, h2, .business-owner, .contact-person, [class*=\"contact-name\"], [data-testid*=\"name\"]"
+            },
+            {
+              "key": "business_address",
+              "cssSelector": ".address, .location, [class*=\"address\"], .business-address, .contact-address, [data-testid*=\"address\"], [data-testid*=\"location\"]"
+            },
+            {
+              "key": "business_hours",
+              "cssSelector": ".hours, .business-hours, [class*=\"hours\"], [class*=\"schedule\"], [data-testid*=\"hours\"]"
+            },
+            {
+              "key": "website_url",
+              "cssSelector": "a[href*=\"http\"], .website, [class*=\"website\"], [data-testid*=\"website\"]",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "social-media-extractor",
+      "name": "Social Media Contact Extractor",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Company: {{ $json.company_name }}\nSocial Links: {{ $json.social_links }}\nContact Info: {{ $json.contact_info }}\nEmails: {{ $json.email_addresses }}\nPhones: {{ $json.phone_numbers }}\nBusiness Address: {{ $json.business_address }}\nSocial Contact Email: {{ $json.contact_email }}\nSocial Contact Phone: {{ $json.contact_phone }}\nContact Name: {{ $json.contact_name }}\nSocial Business Address: {{ $json.business_address }}\nBusiness Hours: {{ $json.business_hours }}\nWebsite URL: {{ $json.website_url }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "company_name",
+              "description": "The official company name",
+              "required": true
+            },
+            {
+              "name": "primary_contact_email",
+              "description": "The primary business contact email address"
+            },
+            {
+              "name": "primary_contact_phone",
+              "description": "The primary business contact phone number"
+            },
+            {
+              "name": "contact_person_name",
+              "description": "The name of the primary contact person or business owner"
+            },
+            {
+              "name": "business_address",
+              "description": "The complete business address"
+            },
+            {
+              "name": "business_hours",
+              "description": "Business operating hours"
+            },
+            {
+              "name": "website_url",
+              "description": "Primary company website URL"
+            },
+            {
+              "name": "social_media_profiles",
+              "description": "List of social media profile URLs found"
+            },
+            {
+              "name": "data_quality_score",
+              "type": "number",
+              "description": "Quality score from 1-10 based on completeness of contact information",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ai-data-processor",
+      "name": "AI Data Processor",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Validate this contact information:\nCompany: {{ $json.company_name }}\nEmail: {{ $json.primary_contact_email }}\nPhone: {{ $json.primary_contact_phone }}\nName: {{ $json.contact_person_name }}\nAddress: {{ $json.business_address }}\nHours: {{ $json.business_hours }}\nWebsite: {{ $json.website_url }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "is_valid_email",
+              "type": "boolean",
+              "description": "Whether the email address appears to be valid",
+              "required": true
+            },
+            {
+              "name": "is_valid_phone",
+              "type": "boolean",
+              "description": "Whether the phone number appears to be valid",
+              "required": true
+            },
+            {
+              "name": "is_business_contact",
+              "type": "boolean",
+              "description": "Whether this appears to be a business contact (not personal)",
+              "required": true
+            },
+            {
+              "name": "confidence_level",
+              "type": "number",
+              "description": "Confidence level from 1-10 in the accuracy of this contact information",
+              "required": true
+            },
+            {
+              "name": "validation_notes",
+              "description": "Any notes about the validation process or concerns"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "data-validator",
+      "name": "Data Validator",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "company_name",
+              "name": "company_name",
+              "value": "={{ $json.company_name }}",
+              "type": "string"
+            },
+            {
+              "id": "contact_email",
+              "name": "contact_email",
+              "value": "={{ $json.primary_contact_email }}",
+              "type": "string"
+            },
+            {
+              "id": "contact_phone",
+              "name": "contact_phone",
+              "value": "={{ $json.primary_contact_phone }}",
+              "type": "string"
+            },
+            {
+              "id": "contact_name",
+              "name": "contact_name",
+              "value": "={{ $json.contact_person_name }}",
+              "type": "string"
+            },
+            {
+              "id": "business_address",
+              "name": "business_address",
+              "value": "={{ $json.business_address }}",
+              "type": "string"
+            },
+            {
+              "id": "business_hours",
+              "name": "business_hours",
+              "value": "={{ $json.business_hours }}",
+              "type": "string"
+            },
+            {
+              "id": "website_url",
+              "name": "website_url",
+              "value": "={{ $json.website_url }}",
+              "type": "string"
+            },
+            {
+              "id": "social_media_profiles",
+              "name": "social_media_profiles",
+              "value": "={{ $json.social_media_profiles }}",
+              "type": "string"
+            },
+            {
+              "id": "data_quality_score",
+              "name": "data_quality_score",
+              "value": "={{ $json.data_quality_score }}",
+              "type": "number"
+            },
+            {
+              "id": "is_valid_email",
+              "name": "is_valid_email",
+              "value": "={{ $json.is_valid_email }}",
+              "type": "boolean"
+            },
+            {
+              "id": "is_valid_phone",
+              "name": "is_valid_phone",
+              "value": "={{ $json.is_valid_phone }}",
+              "type": "boolean"
+            },
+            {
+              "id": "is_business_contact",
+              "name": "is_business_contact",
+              "value": "={{ $json.is_business_contact }}",
+              "type": "boolean"
+            },
+            {
+              "id": "confidence_level",
+              "name": "confidence_level",
+              "value": "={{ $json.confidence_level }}",
+              "type": "number"
+            },
+            {
+              "id": "validation_notes",
+              "name": "validation_notes",
+              "value": "={{ $json.validation_notes }}",
+              "type": "string"
+            },
+            {
+              "id": "extraction_timestamp",
+              "name": "extraction_timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "response-formatter",
+      "name": "Response Formatter",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1360,
+        560
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Search (SerpApi)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Search (SerpApi)": {
+      "main": [
+        [
+          {
+            "node": "Website Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website Crawler": {
+      "main": [
+        [
+          {
+            "node": "HTML Data Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Data Extractor": {
+      "main": [
+        [
+          {
+            "node": "Split Social Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Social Links": {
+      "main": [
+        [
+          {
+            "node": "Social Media Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Social Media Crawler": {
+      "main": [
+        [
+          {
+            "node": "Social Media Contact Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Social Media Contact Extractor": {
+      "main": [
+        [
+          {
+            "node": "AI Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Data Processor": {
+      "main": [
+        [
+          {
+            "node": "Data Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Validator": {
+      "main": [
+        [
+          {
+            "node": "Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Formatter": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  }
+}
